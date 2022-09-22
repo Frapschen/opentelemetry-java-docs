@@ -125,8 +125,12 @@ public final class PrometheusExample {
         scrape_interval: 5s
         static_configs:
           - targets:
+              # 这ip取决与你自己的环境
               - '10.70.4.138:9999'
   */
+  /*
+  * 先启动好prometheus,然后运行下面的函数，在运行前需要配置一个运行参数：9999，用来设置指标暴露的端口
+  * */
   public static void main(String[] args) {
     int prometheusPort = 0;
     try {
