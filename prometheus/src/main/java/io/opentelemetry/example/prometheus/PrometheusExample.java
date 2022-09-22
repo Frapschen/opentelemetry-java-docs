@@ -1,22 +1,17 @@
 package io.opentelemetry.example.prometheus;
 
-import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.metrics.*;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
-import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
-import io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil;
-import io.opentelemetry.sdk.metrics.internal.exemplar.ExemplarFilter;
 
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.BiConsumer;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 
@@ -70,7 +65,7 @@ public final class PrometheusExample {
     }
   }
 
-
+  // work for Exemplars demo
   void simulate2() {
     for (int i = 500; i > 0; i--) {
       try {
@@ -104,6 +99,34 @@ public final class PrometheusExample {
     }
   }
 
+  /*
+  command:
+  docker run -it --rm\
+    -p 9090:9090 \
+    -v /Users/fraps/Desktop/DC-dev/prometheus:/etc/prometheus \
+    -e ENABLE-FEATURE=remote-write-receiver \
+    prom/prometheus:v2.35.0 \
+    --config.file=/etc/prometheus/prometheus-test.yml \
+    --storage.tsdb.path=/prometheus \
+    --web.console.libraries=/usr/share/prometheus/console_libraries \
+    --web.console.templates=/usr/share/prometheus/consoles \
+    --enable-feature=remote-write-receiver \
+    --enable-feature=exemplar-storage
+  */
+
+  /*
+    file: /Users/fraps/Desktop/DC-dev/prometheus/prometheus-test.yml
+    global:
+      scrape_interval:     15s
+      external_labels:
+        monitor: 'codelab-monitor'
+    scrape_configs:
+      - job_name: java_metrics
+        scrape_interval: 5s
+        static_configs:
+          - targets:
+              - '10.70.4.138:9999'
+  */
   public static void main(String[] args) {
     int prometheusPort = 0;
     try {
