@@ -28,7 +28,7 @@ import org.mockserver.model.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 /**
  * The role of this class is to test the telemetry. It only works if the opentelemetry java agent is
@@ -80,7 +80,7 @@ class ApplicationTest {
               var spans = extractSpansFromRequests(requests);
               assertThat(spans)
                   .extracting(Span::getName)
-                  .contains("Controller.doWork", "Controller.ping");
+                  .contains("Controller.doWork", "GET", "GET /ping");
 
               // verify metrics
               var metrics = extractMetricsFromRequests(requests);
@@ -99,7 +99,7 @@ class ApplicationTest {
         .map(HttpRequest::getBody)
         .flatMap(body -> getExportTraceServiceRequest(body).stream())
         .flatMap(r -> r.getResourceSpansList().stream())
-        .flatMap(r -> r.getInstrumentationLibrarySpansList().stream())
+        .flatMap(r -> r.getScopeSpansList().stream())
         .flatMap(r -> r.getSpansList().stream())
         .collect(Collectors.toList());
   }
@@ -123,7 +123,7 @@ class ApplicationTest {
         .map(HttpRequest::getBody)
         .flatMap(body -> getExportMetricsServiceRequest(body).stream())
         .flatMap(r -> r.getResourceMetricsList().stream())
-        .flatMap(r -> r.getInstrumentationLibraryMetricsList().stream())
+        .flatMap(r -> r.getScopeMetricsList().stream())
         .flatMap(r -> r.getMetricsList().stream())
         .collect(Collectors.toList());
   }
