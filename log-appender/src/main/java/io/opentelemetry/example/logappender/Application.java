@@ -1,8 +1,8 @@
 package io.opentelemetry.example.logappender;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
@@ -13,9 +13,10 @@ import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.ThreadContext;
@@ -32,7 +33,13 @@ public class Application {
 
   public static void main(String[] args) {
     // Initialize OpenTelemetry as early as possible
-    initializeOpenTelemetry();
+    OpenTelemetry openTelemetry = initializeOpenTelemetry();
+    // Install OpenTelemetry in log4j appender
+    io.opentelemetry.instrumentation.log4j.appender.v2_17.OpenTelemetryAppender.install(
+        openTelemetry);
+    // Install OpenTelemetry in logback appender
+    io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender.install(
+        openTelemetry);
 
     // Route JUL logs to slf4j
     SLF4JBridgeHandler.removeHandlersForRootLogger();
@@ -46,6 +53,9 @@ public class Application {
     mapMessage.put("message", "A log4j structured message");
     maybeRunWithSpan(() -> log4jLogger.info(new MapMessage<>(mapMessage)), false);
     ThreadContext.clearAll();
+    maybeRunWithSpan(
+        () -> log4jLogger.info("A log4j log message with an exception", new Exception("error!")),
+        false);
 
     // Log using slf4j API w/ logback backend
     maybeRunWithSpan(() -> slf4jLogger.info("A slf4j log message without a span"), false);
@@ -58,17 +68,25 @@ public class Application {
                 .addKeyValue("key", "value")
                 .log(),
         false);
+    maybeRunWithSpan(
+        () -> slf4jLogger.info("A slf4j log message with an exception", new Exception("error!")),
+        false);
 
     // Log using JUL API, bridged to slf4j, w/ logback backend
     maybeRunWithSpan(() -> julLogger.info("A JUL log message without a span"), false);
     maybeRunWithSpan(() -> julLogger.info("A JUL log message with a span"), true);
+    maybeRunWithSpan(
+        () ->
+            julLogger.log(
+                Level.INFO, "A JUL log message with an exception", new Exception("error!")),
+        false);
 
     // Log using OpenTelemetry Log Bridge API
     // WARNING: This illustrates how to write appenders which bridge logs from
     // existing frameworks into the OpenTelemetry Log Bridge API. These APIs
     // SHOULD NOT be used by end users in place of existing log APIs (i.e. Log4j, Slf4, JUL).
     io.opentelemetry.api.logs.Logger customAppenderLogger =
-        GlobalLoggerProvider.get().get("custom-log-appender");
+        openTelemetry.getLogsBridge().get("custom-log-appender");
     maybeRunWithSpan(
         () ->
             customAppenderLogger
@@ -89,7 +107,7 @@ public class Application {
         true);
   }
 
-  private static void initializeOpenTelemetry() {
+  private static OpenTelemetry initializeOpenTelemetry() {
     OpenTelemetrySdk sdk =
         OpenTelemetrySdk.builder()
             .setTracerProvider(SdkTracerProvider.builder().setSampler(Sampler.alwaysOn()).build())
@@ -107,11 +125,11 @@ public class Application {
                             .build())
                     .build())
             .build();
-    GlobalOpenTelemetry.set(sdk);
-    GlobalLoggerProvider.set(sdk.getSdkLoggerProvider());
 
     // Add hook to close SDK, which flushes logs
     Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
+
+    return sdk;
   }
 
   private static void maybeRunWithSpan(Runnable runnable, boolean withSpan) {

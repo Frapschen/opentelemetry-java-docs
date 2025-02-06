@@ -1,33 +1,37 @@
-# gRPC Example
+# GRPC Example
 
-**Note:** This is an advanced scenario useful for people that want to *manually* instrument their own code. 
+**Note:** This is an advanced scenario useful for people who want to *manually* instrument their own code.
+(If you're using the [java agent](https://github.com/open-telemetry/opentelemetry-java-instrumentation), you get this instrumentation "out-of-the-box" and this isn't necessary.)
 
-This example demonstrates how to use the OpenTelemetry API to instrument normal and streamed gRPC calls. 
-The example creates the **Root Span** on the client and sends the distributed context
-over the gRPC request. On the server side, the example shows how to extract the context
-and create a **Child Span**. 
+This is a simple example that demonstrates how to use the OpenTelemetry SDK
+to *manually* instrument a simple GRPC based Client/Server application.
+This example utilizes the [opentelemetry-grpc-1.6](https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/main/instrumentation/grpc-1.6/library#library-instrumentation-for-grpc-160)
+to instrument both the GRPC client and server. 
 
 # How to run
 
 ## Prerequisites
-* Java 1.8
+* Be on the grpc project root folder 
+```shell script
+cd grpc/
+```
 
-## 1 - Compile 
+## 1 - Compile
 ```shell script
 ../gradlew shadowJar
 ```
 
 ## 2 - Start the Server
 ```shell script
-java -cp ./build/libs/opentelemetry-examples-grpc-0.1.0-SNAPSHOT-all.jar io.opentelemetry.example.grpc.HelloWorldServer
-```
- 
-## 3 - Start the normal Client
-```shell script
-java -cp ./build/libs/opentelemetry-examples-grpc-0.1.0-SNAPSHOT-all.jar io.opentelemetry.example.grpc.HelloWorldClient
+java -cp ./build/libs/opentelemetry-examples-grpc-0.1.0-SNAPSHOT-all.jar io.opentelemetry.examples.grpc.HelloWorldServer
 ```
 
-## 4 - Start the streamed Client
+## 3 - Start the Client
 ```shell script
-java -cp ./build/libs/opentelemetry-examples-grpc-0.1.0-SNAPSHOT-all.jar io.opentelemetry.example.grpc.HelloWorldClientStream
+java -cp ./build/libs/opentelemetry-examples-grpc-0.1.0-SNAPSHOT-all.jar io.opentelemetry.examples.grpc.HelloWorldClient
 ```
+
+## Result
+![trace_result.png](trace_result.png)
+![client_trace.png](client_trace.png)
+![server_trace.png](server_trace.png)

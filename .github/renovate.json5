@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "customManagers:dockerfileVersions" // used by logging-k8s-stdout-otlp-json/Dockerfile
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "io.opentelemetry:**",
+        "io.opentelemetry.instrumentation:**",
+        "io.opentelemetry.contrib:**",
+        "io.opentelemetry.semconv:**",
+        "io.opentelemetry.proto:**"
+      ],
+      // Renovate's default behavior is only to update from unstable -> unstable if it's for the
+      // major.minor.patch, under the assumption that you would want to update to the stable version
+      // of that release instead of the unstable version for a future release
+      "ignoreUnstable": false
+    },
+    {
+      // intentionally using Java 11 in some examples
+      // not using matchUpdateTypes "major", because renovate wants to bump "11-jre" to "11.0.19_7-jre"
+      "matchPackageNames": ["eclipse-temurin"],
+      "enabled": false
+    }
+  ]
+}
